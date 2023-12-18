@@ -24,9 +24,11 @@ app.use(
     session({
         secret: 'ABCDEFGHSABSDBHJCS',
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
         store: store,
         cookie: {
+            httpOnly: true,
+            sameSite: 'strict',
             maxAge: 1000 * 60 * 60 * 24,
         },
     })
@@ -34,7 +36,6 @@ app.use(
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config({ path: "server/config/config.env" });
 }
-app.use(logMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(csrf({ cookie: true }));
@@ -42,6 +43,7 @@ app.get('/get-csrf-token', (req, res) => {
     console.log(req.csrfToken())
     res.json({ csrfToken: req.csrfToken() });
 });
+app.use(logMiddleware);
 app.use("/api/v1", user);
 app.use("/api/v1", lawIssue);
 app.get("/", (req, res) => {

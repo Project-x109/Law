@@ -50,11 +50,13 @@ exports.Register = asyncErrorHandler(async (req, res) => {
     }
 });
 exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
+    console.log(req.body)
     if (!req.csrfToken()) {
         return res.status(403).json({ error: 'CSRF token verification failed' });
     }
     try {
-        const { username, password, ConfirmPassword } = req.body;
+        const { username, password, ConfirmPassword, firstName, lastName, dateOfBirth, phoneNo } = req.body;
+        console.log(username)
         if (emailValidator(username)) {
             return res.status(400).json({ error: "Invalid email format" });
         }
@@ -65,17 +67,21 @@ exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
         }
 
         const existingUser = await User.findOne({ username });
-
+        console.log("check")
         if (existingUser) {
             return res.status(400).json({ error: "Username already taken" });
         }
-
+        
         const newUser = new User({
             username,
             password,
+            firstName,
+            lastName,
+            birthDate: dateOfBirth,
+            phoneNumber: phoneNo,
             role: 'employee',
         });
-
+        console.log(newUser)
         await newUser.save();
         logger.info(`User registered with ID: ${newUser._id}`);
         req.login(newUser, (err) => {
@@ -86,6 +92,7 @@ exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
                 .json({ message: "Registration successful", user: newUser });
         });
     } catch (err) {
+        console.log(err)
         return res.status(500).json({ error: "Internal Server Error" });
     }
 });
@@ -177,15 +184,15 @@ exports.login = asyncErrorHandler(async (req, res, next) => {
             });
         })(req, res, next);
     } catch (error) {
-        return res.status(500).json({ error: "An error occurred while logging in" });
+        return res.status(500).json({ error: "An error occurred while logging in on backend" });
     }
 });
 exports.profile = asyncErrorHandler(async (req, res) => {
-    console.log(req.user._id)
+    console.log(req.user)
     if (!req.isAuthenticated()) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
-    res.json({ username: req.user.username, id: req.user.id, role: req.user.role });
+    res.json({ user: req.user });
 });
 exports.updateProfile = asyncErrorHandler(async (req, res) => {
     try {

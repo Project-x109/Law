@@ -12,6 +12,23 @@ const UserSchema = new Schema({
     type: String,
     required: true,
   },
+  firstName: {
+    type: String,
+    required: true
+  },
+  lastName: {
+    type: String,
+    required: true
+  },
+  birthDate: {
+    type: Date,
+    required: true
+  },
+  phoneNumber: {
+    type: String, // or Number depending on your requirements
+    required: true,
+    // Add a custom validator for phone number format if needed
+  },
   role: {
     type: String,
     enum: ['employee', 'admin', 'superadmin'],

@@ -29,5 +29,8 @@ const store = new MongoDBStore({
   uri: 'mongodb+srv://amanuelgirma108:gondar2022@cluster0.psqaciy.mongodb.net/?retryWrites=true&w=majority',
   collection: 'sessions',
 });
+store.on('error', function (error) {
+  console.log(error);
+});
 const secretKey = 'YourSuperSecretKeyHere1234567890';
 module.exports = { logMiddleware, logger, secretKey, store };

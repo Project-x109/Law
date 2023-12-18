@@ -3,7 +3,9 @@ const User = require("../models/User")
 const asyncErrorHandler = require("../middlewares/asyncErrorHandler");
 const path = require('path');
 const fs = require('fs');
+const moment = require('moment');
 const csv = require('fast-csv');
+const { ObjectId } = require('mongodb');
 
 exports.addIssue = asyncErrorHandler(async (req, res) => {
     try {
@@ -166,6 +168,29 @@ exports.getIssuesByCreatedBy = asyncErrorHandler(async (req, res) => {
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
+exports.getIssuesByLogin = asyncErrorHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Check if the user exists
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        // Fetch law issues created by the user
+        const issues = await LawIssue.find({ createdBy: userId });
+
+        res.status(200).json({
+            success: true,
+            message: `Law issues created by ${user.username}`,
+            issues: issues,
+        });
+    } catch (error) {
+        console.error('Error fetching law issues by createdBy:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
 exports.deleteIssue = asyncErrorHandler(async (req, res) => {
     try {
         const issueId = req.params.issueId;
@@ -300,7 +325,6 @@ exports.getComments = asyncErrorHandler(async (req, res) => {
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
-// Inside your law controller
 exports.updateComment = asyncErrorHandler(async (req, res) => {
     try {
         const issueId = req.params.issueId;
@@ -365,4 +389,377 @@ exports.deleteComment = asyncErrorHandler(async (req, res) => {
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
+exports.getDashboardSummary = asyncErrorHandler(async (req, res) => {
+    try {
+        const totalIssues = await LawIssue.countDocuments();
+        const issuesByStatus = await LawIssue.aggregate([
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+        const averageResolutionTime = await LawIssue.aggregate([
+            {
+                $match: {
+                    issuedDate: { $exists: true },
+                    issueDecisionDate: { $exists: true },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalResolutionTime: {
+                        $avg: {
+                            $subtract: ["$issueDecisionDate", "$issuedDate"],
+                        },
+                    },
+                },
+            },
+        ]);
+        const summary = {
+            totalIssues,
+            issuesByStatus,
+            averageResolutionTime: averageResolutionTime[0]?.totalResolutionTime || 0, // Handle cases where there are no resolved issues
+        };
 
+        res.status(200).json({
+            success: true,
+            message: "Dashboard summary retrieved successfully",
+            summary,
+        });
+    } catch (error) {
+        console.error('Error getting dashboard summary:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getUserDashboardSummary = asyncErrorHandler(async (req, res) => {
+    try {
+        const createdBy = req.user._id; // Assuming the user ID is stored in req.user._id
+        const totalIssues = await LawIssue.countDocuments({ createdBy });
+
+        const issuesByStatus = await LawIssue.aggregate([
+            {
+                $match: { createdBy }
+            },
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+
+        const averageResolutionTime = await LawIssue.aggregate([
+            {
+                $match: {
+                    createdBy,
+                    issuedDate: { $exists: true },
+                    issueDecisionDate: { $exists: true },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalResolutionTime: {
+                        $avg: {
+                            $subtract: ["$issueDecisionDate", "$issuedDate"],
+                        },
+                    },
+                },
+            },
+        ]);
+
+        const summary = {
+            totalIssues,
+            issuesByStatus,
+            averageResolutionTime: averageResolutionTime[0]?.totalResolutionTime || 0,
+        };
+
+        res.status(200).json({
+            success: true,
+            message: "User dashboard summary retrieved successfully",
+            summary,
+        });
+    } catch (error) {
+        console.error('Error getting user dashboard summary:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.changeIssueStatus = asyncErrorHandler(async (req, res) => {
+    try {
+        const { issueId, newStatus } = req.body;
+        if (!issueId || !newStatus) {
+            return res.status(400).json({ success: false, error: 'Issue ID and new status are required' });
+        }
+        const issue = await LawIssue.findById(issueId);
+        if (!issue) {
+            return res.status(404).json({ success: false, error: 'Law issue not found' });
+        }
+        if (issue.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, error: 'Unauthorized to update this law issue' });
+        }
+        issue.status = newStatus;
+        await issue.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Law issue status updated to ${newStatus} successfully`,
+            lawIssue: issue,
+        });
+    } catch (error) {
+        console.error('Error changing issue status:', error);
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ success: false, error: error.message });
+        }
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getRecentActivities = asyncErrorHandler(async (req, res) => {
+    try {
+        const recentActivities = await LawIssue.find()
+            .sort({ updatedAt: -1 })
+            .limit(10);
+        const formattedActivities = recentActivities.map(activity => {
+            return {
+                issueId: activity._id,
+                issueType: activity.issueType,
+                status: activity.status,
+                updatedAt: activity.updatedAt,
+                updatedBy: activity.updatedBy,
+            };
+        });
+        res.status(200).json({
+            success: true,
+            message: "Recent activities retrieved successfully",
+            recentActivities: formattedActivities,
+        });
+    } catch (error) {
+        console.error('Error retrieving recent activities:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getRecentActivity = asyncErrorHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Check if the user exists
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        const recentActivities = await LawIssue.find({
+            createdBy: userId,
+        })
+            .sort({ updatedAt: -1 })
+            .limit(10);
+        const formattedActivities = recentActivities.map(activity => {
+            return {
+                issueId: activity._id,
+                issueType: activity.issueType,
+                status: activity.status,
+                updatedAt: activity.updatedAt,
+                updatedBy: activity.updatedBy,
+            };
+        });
+        res.status(200).json({
+            success: true,
+            message: `Recent activities for ${user.username}`,
+            recentActivities: formattedActivities,
+        });
+    } catch (error) {
+        console.error('Error fetching recent activities:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getUserPerformance = asyncErrorHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        const userIssues = await LawIssue.find({ createdBy: userId });
+        const resolvedIssues = userIssues.filter(issue => issue.status === 'closed');
+        const numberOfResolvedIssues = resolvedIssues.length;
+        let totalResolutionTime = 0;
+        resolvedIssues.forEach(issue => {
+            if (issue.issueDecisionDate && issue.issueOpenDate) {
+                const resolutionTime = moment(issue.issueDecisionDate).diff(moment(issue.issueOpenDate), 'days');
+                totalResolutionTime += resolutionTime;
+            }
+        });
+        const averageResolutionTime = numberOfResolvedIssues > 0 ?
+            totalResolutionTime / numberOfResolvedIssues :
+            0;
+
+        res.status(200).json({
+            success: true,
+            message: `User performance for ${user.username}`,
+            numberOfResolvedIssues,
+            averageResolutionTime,
+        });
+    } catch (error) {
+        console.error('Error fetching user performance:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getAllUserPerformances = asyncErrorHandler(async (req, res) => {
+    try {
+        // Fetch all users
+        const allUsers = await User.find();
+        if (!allUsers || allUsers.length === 0) {
+            return res.status(404).json({ success: false, error: 'No users found' });
+        }
+        const userPerformances = [];
+        for (const user of allUsers) {
+            const userId = user._id;
+            const userIssues = await LawIssue.find({ createdBy: userId });
+            const resolvedIssues = userIssues.filter(issue => issue.status === 'closed');
+            const numberOfResolvedIssues = resolvedIssues.length;
+
+            let totalResolutionTime = 0;
+            resolvedIssues.forEach(issue => {
+                if (issue.issueDecisionDate && issue.issueOpenDate) {
+                    const resolutionTime = moment(issue.issueDecisionDate).diff(moment(issue.issueOpenDate), 'days');
+                    totalResolutionTime += resolutionTime;
+                }
+            });
+
+            const averageResolutionTime = numberOfResolvedIssues > 0 ?
+                totalResolutionTime / numberOfResolvedIssues :
+                0;
+
+            userPerformances.push({
+                userId,
+                username: user.username,
+                numberOfResolvedIssues,
+                averageResolutionTime,
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'User performances retrieved successfully',
+            userPerformances,
+        });
+    } catch (error) {
+        console.error('Error fetching all user performances:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getPriorityIssues = asyncErrorHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        const priorityIssues = await LawIssue.find({
+            createdBy: userId,
+            $or: [
+                { priority: 'high' },
+                { priority: 'low' },
+                { priority: 'medium' },
+            ],
+        });
+        res.status(200).json({
+            success: true,
+            message: `High, low or medium issues created by ${user.username}`,
+            issues: priorityIssues,
+        });
+    } catch (error) {
+        console.error('Error fetching priority issues by createdBy:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getIssuesCreatedByUser = asyncErrorHandler(async (req, res) => {
+    try {
+        const createdByUserAggregation = await LawIssue.aggregate([
+            {
+                $group: {
+                    _id: "$createdBy",
+                    totalIssues: { $sum: 1 },
+                },
+            },
+        ]);
+        const resultWithUserDetails = await User.populate(createdByUserAggregation, { path: "_id", select: "username" });
+
+        res.status(200).json({
+            success: true,
+            message: "Total number of issues created by each user",
+            data: resultWithUserDetails,
+        });
+    } catch (error) {
+        console.error('Error fetching total issues by user:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getIssuesByStatusForUser = asyncErrorHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        const issuesByStatusAggregation = await LawIssue.aggregate([
+            {
+                $match: { createdBy: new ObjectId(userId) },
+            },
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+
+        res.status(200).json({
+            success: true,
+            message: `Number of issues by status for user ${user.username}`,
+            data: issuesByStatusAggregation,
+        });
+    } catch (error) {
+        console.error('Error fetching issues by status for user:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getCreatedByTotalIssues = asyncErrorHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const totalIssues = await LawIssue.countDocuments({ createdBy: userId });
+        res.status(200).json({ success: true, totalIssues });
+    } catch (error) {
+        console.error('Error retrieving total issues:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getCreatedByStatusDistribution = asyncErrorHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const statusDistribution = await LawIssue.aggregate([
+            { $match: { createdBy: new ObjectId(userId) } },
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+
+        const formattedStatusDistribution = statusDistribution.reduce(
+            (acc, { _id, count }) => {
+                acc[_id] = count;
+                return acc;
+            },
+            {}
+        );
+
+        res.status(200).json({ success: true, statusDistribution: formattedStatusDistribution });
+    } catch (error) {
+        console.error('Error retrieving status distribution:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});

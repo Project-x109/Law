@@ -23,6 +23,7 @@
     "express-validator": "^7.0.1",
     "fast-csv": "^4.3.6",
     "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
     "mongoose": "^7.6.2",
     "nodemailer": "^6.9.7",
     "passport": "^0.6.0",

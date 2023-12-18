@@ -66,6 +66,11 @@ const LawIssueSchema = new Schema({
         enum: ['pending', 'processing', 'closed'],
         default: 'pending',
     },
+    priority: {
+        type: String,
+        enum: ['high', 'low', 'medium'],
+        default: 'medium',
+    },
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',

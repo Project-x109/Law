@@ -50,6 +50,7 @@ const verifyToken = (req, res, next) => {
 };
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
+    console.log("this is the user", req.user)
     return next();
   } else {
     return res.status(401).json({ success: false, error: 'Unauthorized' });

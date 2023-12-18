@@ -16,6 +16,9 @@ const validateLawIssueData = [
     check('lawCourt').optional({ nullable: true }).notEmpty().withMessage('Invalid law court'),
     check('status').optional({ nullable: true }).isIn(['pending', 'processing', 'closed']).withMessage('Invalid status'),
 ];
+const validateLawIssueDataComment = [
+    check('issueId').notEmpty().withMessage('Issue ID is required'),
+];
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -28,5 +31,6 @@ const handleValidationErrors = (req, res, next) => {
 
 module.exports = {
     validateLawIssueData,
+    validateLawIssueDataComment,
     handleValidationErrors,
 };
