@@ -50,28 +50,31 @@ exports.Register = asyncErrorHandler(async (req, res) => {
     }
 });
 exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
-    console.log(req.body)
+    console.log(req.user)
     if (!req.csrfToken()) {
         return res.status(403).json({ error: 'CSRF token verification failed' });
     }
+
     try {
         const { username, password, ConfirmPassword, firstName, lastName, dateOfBirth, phoneNo } = req.body;
-        console.log(username)
+
+        // Validate email format
         if (emailValidator(username)) {
             return res.status(400).json({ error: "Invalid email format" });
         }
+
+        // Check if passwords match
         if (password !== ConfirmPassword) {
-            return res
-                .status(400)
-                .json({ error: "Password and confirm password do not match" });
+            return res.status(400).json({ error: "Password and confirm password do not match" });
         }
 
+        // Check if username is taken
         const existingUser = await User.findOne({ username });
-        console.log("check")
         if (existingUser) {
             return res.status(400).json({ error: "Username already taken" });
         }
-        
+
+        // Create a new user
         const newUser = new User({
             username,
             password,
@@ -81,21 +84,20 @@ exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
             phoneNumber: phoneNo,
             role: 'employee',
         });
-        console.log(newUser)
+
+        // Save the new user to the database
         await newUser.save();
+
         logger.info(`User registered with ID: ${newUser._id}`);
-        req.login(newUser, (err) => {
-            if (err) return res.status(500).json({ error: "Internal Server Error" });
-            // Send a success response
-            return res
-                .status(201)
-                .json({ message: "Registration successful", user: newUser });
-        });
+
+        // Send a success response
+        return res.status(201).json({ message: "Registration successful", user: req.user });
     } catch (err) {
-        console.log(err)
+        console.log(err);
         return res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 exports.resetPassword = asyncErrorHandler(async (req, res) => {
     if (!req.csrfToken()) {
         return res.status(403).json({ error: 'CSRF token verification failed' });
@@ -244,7 +246,6 @@ exports.updateProfile = asyncErrorHandler(async (req, res) => {
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
-
 exports.logout = asyncErrorHandler(async (req, res) => {
     req.logout(function (err) {
         if (err) {
@@ -261,3 +262,15 @@ exports.logout = asyncErrorHandler(async (req, res) => {
         });
     });
 });
+exports.allUsers = asyncErrorHandler(async (req, res) => {
+    try {
+        // Fetch all users with role 'employee'
+        const employees = await User.find({ role: 'employee' });
+        console.log(employees)
+        return res.status(200).json({ success: true, users: employees });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+})
