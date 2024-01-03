@@ -57,19 +57,13 @@ const LawIssueSchema = new Schema({
     },
     issueLevel: {
         type: String,
-    },
-    lawCourt: {
-        type: String,
+        enum: ['high', 'low', 'medium'],
+        default: 'medium',
     },
     status: {
         type: String,
         enum: ['pending', 'processing', 'closed'],
         default: 'pending',
-    },
-    priority: {
-        type: String,
-        enum: ['high', 'low', 'medium'],
-        default: 'medium',
     },
     createdBy: {
         type: Schema.Types.ObjectId,

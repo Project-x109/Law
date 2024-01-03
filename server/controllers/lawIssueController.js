@@ -8,21 +8,21 @@ const csv = require('fast-csv');
 const { ObjectId } = require('mongodb');
 
 exports.addIssue = asyncErrorHandler(async (req, res) => {
+    console.log(req.body);
     try {
         const {
             issueType,
-            issueRequestDate,
-            issueStartDate,
             issueRegion,
             requestingDepartment,
             issueRaisedPlace,
             issueRaisedOffice,
-            issuedDate,
             issuedOfficer,
+            issueRequestDate,
+            issueStartDate,
+            issuedDate,
             issueOpenDate,
             issueDecisionDate,
             issueLevel,
-            lawCourt,
             status,
         } = req.body;
         const createdBy = req.user._id;
@@ -39,16 +39,13 @@ exports.addIssue = asyncErrorHandler(async (req, res) => {
             issueOpenDate,
             issueDecisionDate,
             issueLevel,
-            lawCourt,
             status,
             createdBy,
         });
         await newLawIssue.save();
         res.status(201).json({ success: true, message: "Law issue added successfully", lawIssue: newLawIssue });
     } catch (error) {
-        console.error('Error adding law issue:', error);
         if (error.name === 'ValidationError') {
-            // Handle Mongoose validation errors
             return res.status(400).json({ success: false, error: error.message });
         }
         res.status(500).json({ success: false, error: 'Internal Server Error' });

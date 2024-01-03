@@ -128,7 +128,8 @@ exports.resetPassword = asyncErrorHandler(async (req, res) => {
 });
 exports.resetPasswordToken = asyncErrorHandler(async (req, res) => {
     const { token } = req.params;
-    const ConfirmPassword = req.body.ConfirmPassword;
+    console.log(req.body.confirmPassword)
+    const confirmPassword = req.body.confirmPassword;
     const password = req.body.password;
     const resetToken = await ResetToken.findOne({ token });
 
@@ -138,7 +139,7 @@ exports.resetPasswordToken = asyncErrorHandler(async (req, res) => {
     if (resetToken.expirationDate < new Date()) {
         return res.status(400).json({ error: 'Token has expired' });
     }
-    if (password !== ConfirmPassword) {
+    if (password !== confirmPassword) {
         return res.status(400).json({ error: "Password Dont Match" });
     }
     const passwordErrors = validatePassword(password);
@@ -147,6 +148,7 @@ exports.resetPasswordToken = asyncErrorHandler(async (req, res) => {
     }
     // Update the user's password
     const user = await User.findById(resetToken.userId);
+    console.log(user)
     user.password = req.body.password;
     try {
         await user.save();
@@ -154,6 +156,7 @@ exports.resetPasswordToken = asyncErrorHandler(async (req, res) => {
 
         res.json({ success: 'Password updated successfully' });
     } catch (err) {
+        console.log(err)
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

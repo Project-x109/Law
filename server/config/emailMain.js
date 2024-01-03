@@ -6,7 +6,7 @@ exports.getCSS = () => `
         transform: translateY(-5px);
     }
     50% {
-        transform: translateY(5px);
+        transform: translateY(5px);c
     }
 }
 body {
@@ -166,7 +166,7 @@ async function sendForgetPasswordToken(sendto, token) {
     service: "Gmail", // Use your email service (e.g., Gmail)
     auth: {
       user: "amanuelgirma108@gmail.com", // Your email
-      pass: "vxcqjvjhxejrdeja", // Your email password
+      pass: "kuyzogbrnpuuarrj", // Your email password
     },
   });
 
@@ -188,7 +188,7 @@ async function sendForgetPasswordToken(sendto, token) {
         </div>
         <p class="card-title">Dear ${sendto.username},</p>     
         <p class="card-title">Account Reactivated</p>    
-        <p class="card-body"><a href='http://localhost:3000/resetpassword?token=${token}'>Change Password</a></span></p>
+        <p class="card-body"><a href='http://localhost:3000/pages/reset-password?token=${token}'>Change Password</a></span></p>
         <p class="card-body">To ensure a smooth transition back, we recommend you to check your account settings and update any outdated information. Also, take a moment to familiarize yourself with any new features or services that we've added during your absence.</p>
         <p class="card-body">If you have any questions or need assistance with anything, our dedicated support team is here to help. You can reach us via phone or email.</p>
         <p class="footer">Call us on: <span class="by-name">+251 925 882-8232</span></p>

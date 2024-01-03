@@ -34,12 +34,12 @@ const {
     validateLawIssueDataComment,
     handleValidationErrors } = require("../middlewares/validation")
 
-router.route("/addissue").post(isAuthenticated, verifyToken, validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), addIssue)
+router.route("/addissue").post(isAuthenticated, verifyToken,validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), addIssue)
 router.route("/updateissue/:issueId").put(isAuthenticated, verifyToken, validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), updateIssue);
 router.route("/getallissues").get(isAuthenticated, verifyToken, authorize(["admin"]), getAllIssues);
 router.route("/addcomment/:issueId").post(isAuthenticated, verifyToken, validateLawIssueDataComment, handleValidationErrors, authorize(["admin", "employee"]), addComment);
 router.route("/getcomment/:issueId").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getComments);
-router.route("/updatecomment/:issueId/:commentId").put(isAuthenticated, verifyToken,validateLawIssueDataComment, handleValidationErrors, authorize(["admin", "employee"]), updateComment);
+router.route("/updatecomment/:issueId/:commentId").put(isAuthenticated, verifyToken, validateLawIssueDataComment, handleValidationErrors, authorize(["admin", "employee"]), updateComment);
 router.route("/getissuebyid/:issueId").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getIssueById);
 router.route("/getissuesbycreatedby/:userId").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getIssuesByCreatedBy);
 router.route("/getissuesbylogin").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getIssuesByLogin);
