@@ -36,7 +36,7 @@ const {
 
 router.route("/addissue").post(isAuthenticated, verifyToken,validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), addIssue)
 router.route("/updateissue/:issueId").put(isAuthenticated, verifyToken, validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), updateIssue);
-router.route("/getallissues").get(isAuthenticated, verifyToken, authorize(["admin"]), getAllIssues);
+router.route("/getallissues").get(isAuthenticated, verifyToken, authorize(["admin","employee"]), getAllIssues);
 router.route("/addcomment/:issueId").post(isAuthenticated, verifyToken, validateLawIssueDataComment, handleValidationErrors, authorize(["admin", "employee"]), addComment);
 router.route("/getcomment/:issueId").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getComments);
 router.route("/updatecomment/:issueId/:commentId").put(isAuthenticated, verifyToken, validateLawIssueDataComment, handleValidationErrors, authorize(["admin", "employee"]), updateComment);

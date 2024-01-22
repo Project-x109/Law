@@ -15,14 +15,15 @@ exports.addIssue = asyncErrorHandler(async (req, res) => {
             issueRegion,
             requestingDepartment,
             issueRaisedPlace,
-            issueRaisedOffice,
-            issuedOfficer,
+            issueRaisingOffice,
+            issueRaisingOfficer,
             issueRequestDate,
             issueStartDate,
             issuedDate,
             issueOpenDate,
             issueDecisionDate,
             issueLevel,
+            legalMotions,
             status,
         } = req.body;
         const createdBy = req.user._id;
@@ -33,12 +34,13 @@ exports.addIssue = asyncErrorHandler(async (req, res) => {
             issueRegion,
             requestingDepartment,
             issueRaisedPlace,
-            issueRaisedOffice,
+            issueRaisedOffice: issueRaisingOffice,
             issuedDate,
-            issuedOfficer,
+            issuedOfficer: issueRaisingOfficer,
             issueOpenDate,
             issueDecisionDate,
             issueLevel,
+            legalMotions,
             status,
             createdBy,
         });
@@ -62,21 +64,19 @@ exports.updateIssue = asyncErrorHandler(async (req, res) => {
             return res.status(403).json({ success: false, error: 'Unauthorized to update this law issue' });
         }
         const originalData = { ...existingIssue.toObject() };
-
-        // Update the law issue fields
         existingIssue.issueType = req.body.issueType;
         existingIssue.issueRequestDate = req.body.issueRequestDate;
         existingIssue.issueStartDate = req.body.issueStartDate;
         existingIssue.issueRegion = req.body.issueRegion;
         existingIssue.requestingDepartment = req.body.requestingDepartment;
         existingIssue.issueRaisedPlace = req.body.issueRaisedPlace;
-        existingIssue.issueRaisedOffice = req.body.issueRaisedOffice;
+        existingIssue.issueRaisedOffice = req.body.issueRaisingOffice;
         existingIssue.issuedDate = req.body.issuedDate;
-        existingIssue.issuedOfficer = req.body.issuedOfficer;
+        existingIssue.issuedOfficer = req.body.issueRaisingOfficer;
         existingIssue.issueOpenDate = req.body.issueOpenDate;
         existingIssue.issueDecisionDate = req.body.issueDecisionDate;
         existingIssue.issueLevel = req.body.issueLevel;
-        existingIssue.lawCourt = req.body.lawCourt;
+        existingIssue.legalMotions = req.body.legalMotions;
         existingIssue.status = req.body.status;
         existingIssue.updatedAt = new Date();
         existingIssue.updatedBy = req.user._id;
@@ -85,8 +85,8 @@ exports.updateIssue = asyncErrorHandler(async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Law issue updated successfully",
-            lawIssue: existingIssue,
-            originalData, // Include original data for reference
+            //lawIssue: existingIssue,
+            //originalData, 
         });
     } catch (error) {
         console.error('Error updating law issue:', error);
@@ -100,7 +100,7 @@ exports.updateIssue = asyncErrorHandler(async (req, res) => {
 exports.getAllIssues = asyncErrorHandler(async (req, res) => {
     try {
         // Get all law issues from the database
-        const allLawIssues = await LawIssue.find();
+        const allLawIssues = await LawIssue.find().populate('createdBy');
 
         res.status(200).json({
             success: true,
@@ -117,19 +117,20 @@ exports.getIssueById = asyncErrorHandler(async (req, res) => {
         const issueId = req.params.issueId;
 
         // Check if the issue exists
-        const lawIssue = await LawIssue.findById(issueId);
+        const lawIssue = await LawIssue.findById(issueId).populate('createdBy');
+        console.log(lawIssue)
 
         if (!lawIssue) {
             return res.status(404).json({ success: false, error: 'Law issue not found' });
         }
 
         // Only allow accessing if the user is the creator of the issue or an admin
-        if (
+        /* if (
             lawIssue.createdBy.toString() !== req.user._id.toString() &&
             !req.user.role.includes("admin")
         ) {
             return res.status(403).json({ success: false, error: 'Unauthorized to access this law issue' });
-        }
+        } */
 
         res.status(200).json({
             success: true,
@@ -657,9 +658,9 @@ exports.getPriorityIssues = asyncErrorHandler(async (req, res) => {
         const priorityIssues = await LawIssue.find({
             createdBy: userId,
             $or: [
-                { priority: 'high' },
-                { priority: 'low' },
-                { priority: 'medium' },
+                { issueLevel: 'high' },
+                { issueLevel: 'low' },
+                { issueLevel: 'medium' },
             ],
         });
         res.status(200).json({

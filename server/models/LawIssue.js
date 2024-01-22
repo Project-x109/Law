@@ -60,6 +60,10 @@ const LawIssueSchema = new Schema({
         enum: ['high', 'low', 'medium'],
         default: 'medium',
     },
+    legalMotions: {
+        type: String,
+        required: true
+    },
     status: {
         type: String,
         enum: ['pending', 'processing', 'closed'],
