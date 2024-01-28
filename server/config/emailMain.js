@@ -166,7 +166,7 @@ async function sendForgetPasswordToken(sendto, token) {
     service: "Gmail", // Use your email service (e.g., Gmail)
     auth: {
       user: "amanuelgirma108@gmail.com", // Your email
-      pass: "kuyzogbrnpuuarrj", // Your email password
+      pass: "wevmlygpnqbbgoxk", // Your email password
     },
   });
 

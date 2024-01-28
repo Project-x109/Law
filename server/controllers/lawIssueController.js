@@ -8,7 +8,7 @@ const csv = require('fast-csv');
 const { ObjectId } = require('mongodb');
 
 exports.addIssue = asyncErrorHandler(async (req, res) => {
-    console.log(req.body);
+    const error = [];
     try {
         const {
             issueType,
@@ -46,22 +46,27 @@ exports.addIssue = asyncErrorHandler(async (req, res) => {
         });
         await newLawIssue.save();
         res.status(201).json({ success: true, message: "Law issue added successfully", lawIssue: newLawIssue });
-    } catch (error) {
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ success: false, error: error.message });
+    } catch (err) {
+        if (err.name === 'ValidationError') {
+            error.push(err.message)
+            return res.status(400).json({ success: false, error: error });
         }
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
+        error.push("Internal Server Error")
+        res.status(500).json({ success: false, error: error });
     }
 });
 exports.updateIssue = asyncErrorHandler(async (req, res) => {
+    const error = []
     try {
         const issueId = req.params.issueId;
         const existingIssue = await LawIssue.findById(issueId);
         if (!existingIssue) {
-            return res.status(404).json({ success: false, error: 'Law issue not found' });
+            error.push('Law issue not found')
+            return res.status(404).json({ success: false, error: error });
         }
         if (existingIssue.createdBy.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ success: false, error: 'Unauthorized to update this law issue' });
+            error.push('Unauthorized to update this law issue')
+            return res.status(403).json({ success: false, error: error });
         }
         const originalData = { ...existingIssue.toObject() };
         existingIssue.issueType = req.body.issueType;
@@ -85,16 +90,16 @@ exports.updateIssue = asyncErrorHandler(async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Law issue updated successfully",
-            //lawIssue: existingIssue,
-            //originalData, 
+            lawIssue: existingIssue,
+            originalData,
         });
-    } catch (error) {
-        console.error('Error updating law issue:', error);
-
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ success: false, error: error.message });
+    } catch (err) {
+        if (err.name === 'ValidationError') {
+            error.push(error.message)
+            return res.status(400).json({ success: false, error: error });
         }
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
+        error.push('Internal Server Error')
+        res.status(500).json({ success: false, error: error });
     }
 });
 exports.getAllIssues = asyncErrorHandler(async (req, res) => {
@@ -146,16 +151,11 @@ exports.getIssueById = asyncErrorHandler(async (req, res) => {
 exports.getIssuesByCreatedBy = asyncErrorHandler(async (req, res) => {
     try {
         const userId = req.params.userId;
-
-        // Check if the user exists
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
-
-        // Fetch law issues created by the user
         const issues = await LawIssue.find({ createdBy: userId });
-
         res.status(200).json({
             success: true,
             message: `Law issues created by ${user.username}`,

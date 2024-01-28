@@ -4,43 +4,27 @@ const User = require("../models/User");
 const ResetToken = require('../models/ResetToken');
 const { logger } = require("../middlewares/logMiddleware");
 const { sendForgetPasswordToken } = require("../config/emailMain");
-const { emailValidator, validatePassword } = require("../config/functions");
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const secretKey = 'YourSuperSecretKeyHere1234567890';
 const asyncErrorHandler = require("../middlewares/asyncErrorHandler")
+const bcrypt = require("bcrypt");
 exports.Register = asyncErrorHandler(async (req, res) => {
-    if (!req.csrfToken()) {
-        return res.status(403).json({ error: 'CSRF token verification failed' });
-    }
     try {
-        const { username, password, ConfirmPassword } = req.body;
-        if (emailValidator(username)) {
-            return res.status(400).json({ error: "Invalid email format" });
-        }
-        if (password !== ConfirmPassword) {
-            return res
-                .status(400)
-                .json({ error: "Password and confirm password do not match" });
-        }
-
+        const { username, password } = req.body;
         const existingUser = await User.findOne({ username });
-
         if (existingUser) {
-            return res.status(400).json({ error: "Username already taken" });
+            return res.status(400).json({ success: false, error: "Username already taken" });
         }
-
         const newUser = new User({
             username,
             password,
             role: 'admin',
         });
-
         await newUser.save();
         logger.info(`User registered with ID: ${newUser._id}`);
         req.login(newUser, (err) => {
             if (err) return res.status(500).json({ error: "Internal Server Error" });
-            // Send a success response
             return res
                 .status(201)
                 .json({ message: "Registration successful", user: newUser });
@@ -50,31 +34,14 @@ exports.Register = asyncErrorHandler(async (req, res) => {
     }
 });
 exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
-    console.log(req.user)
-    if (!req.csrfToken()) {
-        return res.status(403).json({ error: 'CSRF token verification failed' });
-    }
-
+    const error = [];
     try {
-        const { username, password, ConfirmPassword, firstName, lastName, dateOfBirth, phoneNo } = req.body;
-
-        // Validate email format
-        if (emailValidator(username)) {
-            return res.status(400).json({ error: "Invalid email format" });
-        }
-
-        // Check if passwords match
-        if (password !== ConfirmPassword) {
-            return res.status(400).json({ error: "Password and confirm password do not match" });
-        }
-
-        // Check if username is taken
+        const { username, password, firstName, lastName, dateOfBirth, phoneNo } = req.body;
         const existingUser = await User.findOne({ username });
         if (existingUser) {
-            return res.status(400).json({ error: "Username already taken" });
+            error.push("Username already taken");
+            return res.status(400).json({ success: false, error: error });
         }
-
-        // Create a new user
         const newUser = new User({
             username,
             password,
@@ -84,33 +51,26 @@ exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
             phoneNumber: phoneNo,
             role: 'employee',
         });
-
-        // Save the new user to the database
         await newUser.save();
-
         logger.info(`User registered with ID: ${newUser._id}`);
-
-        // Send a success response
         return res.status(201).json({ message: "Registration successful", user: req.user });
     } catch (err) {
-        console.log(err);
-        return res.status(500).json({ error: "Internal Server Error" });
+        error.push("Internal Server Error")
+        return res.status(500).json({ success: false, error: error });
     }
 });
 
 exports.resetPassword = asyncErrorHandler(async (req, res) => {
-    if (!req.csrfToken()) {
-        return res.status(403).json({ error: 'CSRF token verification failed' });
-    }
+    const error = []
     const { username } = req.body;
     const user = await User.findOne({ username });
 
     if (!user) {
-        return res.status(404).json({ error: 'User Not Found' });
+        error.push('User Not Found')
+        return res.status(404).json({ success: false, error: error });
     }
 
     try {
-        // Check if a reset token already exists for the user
         let resetToken = await ResetToken.findOne({ userId: user._id });
         if (!resetToken) {
             resetToken = new ResetToken();
@@ -123,56 +83,93 @@ exports.resetPassword = asyncErrorHandler(async (req, res) => {
         sendForgetPasswordToken(user, resetToken.token);
         return res.json({ success: 'Token sent to your email' });
     } catch (err) {
-        return res.status(500).json({ error: 'Internal Server Error' });
+        error.push("Internal Server Error")
+        return res.status(500).json({ success: false, error: error });
     }
 });
+exports.changePassword = asyncErrorHandler(async (req, res) => {
+    const { currentPassword, password } = req.body;
+    const error = []
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        error.push("User Not Found")
+        return res.status(404).json({ success: false, error: error });
+    }
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+        error.push("Old Password is Not Correct")
+        return res.status(401).json({ success: false, error: error });
+    }
+    user.password = password;
+    try {
+        await user.save();
+        return res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        error.push("Internal Server Error")
+        return res.status(500).json({ success: false, error: error });
+
+    }
+});
+
 exports.resetPasswordToken = asyncErrorHandler(async (req, res) => {
     const { token } = req.params;
-    console.log(req.body.confirmPassword)
-    const confirmPassword = req.body.confirmPassword;
     const password = req.body.password;
-    const resetToken = await ResetToken.findOne({ token });
-
-    if (!resetToken) {
-        return res.status(404).json({ error: 'Invalid or expired token' });
-    }
-    if (resetToken.expirationDate < new Date()) {
-        return res.status(400).json({ error: 'Token has expired' });
-    }
-    if (password !== confirmPassword) {
-        return res.status(400).json({ error: "Password Dont Match" });
-    }
-    const passwordErrors = validatePassword(password);
-    if (passwordErrors.length > 0) {
-        return res.status(400).json({ error: passwordErrors });
-    }
-    // Update the user's password
-    const user = await User.findById(resetToken.userId);
-    console.log(user)
-    user.password = req.body.password;
+    const error = [];
     try {
+        const resetToken = await ResetToken.findOne({ token });
+        console.log("Reset Token:", resetToken);
+
+
+
+        if (!resetToken) {
+            error.push('Invalid or expired token');
+            return res.status(404).json({ success: false, error: error });
+        }
+
+        if (resetToken.expirationDate < new Date()) {
+            error.push("Token has expired");
+            return res.status(400).json({ success: false, error: error });
+        }
+
+        const user = await User.findById(resetToken.userId);
+        console.log("User:", user);
+
+        if (!user) {
+            error.push('User not found');
+            return res.status(404).json({ success: false, error: error });
+        }
+
+        user.password = password;
+        console.log("New Password:", user.password);
+
         await user.save();
         await ResetToken.deleteOne({ _id: resetToken._id });
 
-        res.json({ success: 'Password updated successfully' });
+        res.status(200).json({ success: 'Password updated successfully' });
     } catch (err) {
         console.log(err)
-        res.status(500).json({ error: 'Internal Server Error' });
+        error.push("Internal Server Error")
+        return res.status(500).json({ success: false, error: error });
+
     }
 });
+
 exports.login = asyncErrorHandler(async (req, res, next) => {
+    const error = [];
     try {
         passport.authenticate("local", async (err, user, info) => {
             if (err) {
-                console.error("Error in login authentication:", err);
-                return res.status(500).json({ error: "Internal Server Error" });
+                error.push("Internal Server Error")
+                return res.status(500).json({ success: false, error: error });
             }
             if (info) {
-                return res.status(400).json({ error: info.message });
+                error.push(info.message)
+                return res.status(400).json({ success: false, error: error });
             }
             req.logIn(user, async (err) => {
                 if (err) {
-                    return res.status(500).json({ error: "Internal Server Error" });
+                    error.push("Internal Server Error")
+                    return res.status(500).json({ success: false, error: error });
                 }
                 req.session.user = { username: user.username };
                 try {
@@ -182,84 +179,35 @@ exports.login = asyncErrorHandler(async (req, res, next) => {
                         { expiresIn: '1h' }
                     );
                     return res.json({ success: "Login successful", user, token });
-                } catch (error) {
-                    console.error("Error while signing JWT:", error);
-                    return res.status(500).json({ error: "Failed to sign JWT token" });
+                } catch (err) {
+                    error.push("Failed to sign JWT token")
+                    return res.status(500).json({ success: false, error: error });
                 }
             });
         })(req, res, next);
-    } catch (error) {
-        return res.status(500).json({ error: "An error occurred while logging in on backend" });
+    } catch (err) {
+        error.push("An error occurred while logging in on backend")
+        return res.status(500).json({ success: false, error: error });
     }
 });
 exports.profile = asyncErrorHandler(async (req, res) => {
-    console.log(req.user)
     if (!req.isAuthenticated()) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
     res.json({ user: req.user });
 });
-exports.updateProfile = asyncErrorHandler(async (req, res) => {
-    try {
-        const { username, password, ConfirmPassword } = req.body;
-
-        // Validate email format
-        if (emailValidator(username)) {
-            return res.status(400).json({ error: "Invalid email format" });
-        }
-
-        // Validate password and confirm password match
-        if (password !== ConfirmPassword) {
-            return res
-                .status(400)
-                .json({ error: "Password and confirm password do not match" });
-        }
-
-        // Find the user by ID
-        const userId = req.user._id;
-        const existingUser = await User.findById(userId);
-
-        if (!existingUser) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        // Update user profile fields
-        existingUser.username = username;
-        existingUser.password = password;
-
-        // If the user is an admin, update the role
-        if (req.user.role === 'admin') {
-            existingUser.role = 'admin';
-        }
-
-        await existingUser.save();
-        logger.info(`User profile updated for ID: ${existingUser._id}`);
-
-        res.status(200).json({
-            success: true,
-            message: "Profile updated successfully",
-            user: existingUser,
-        });
-    } catch (err) {
-        console.error('Error updating user profile:', err);
-
-        if (err.name === 'ValidationError') {
-            return res.status(400).json({ success: false, error: err.message });
-        }
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
-    }
-});
 exports.logout = asyncErrorHandler(async (req, res) => {
+    const error = []
     req.logout(function (err) {
         if (err) {
-            console.error('Error during logout:', err);
-            return res.status(500).json({ error: 'Internal Server Error' });
+            error.push('Internal Server Error')
+            return res.status(500).json({ success: false, error: error });
         }
         res.clearCookie(secretKey);
         req.session.destroy((err) => {
             if (err) {
-                console.error('Error clearing session:', err);
-                return res.status(500).json({ error: 'Internal Server Error' });
+                error.push('Internal Server Error')
+                return res.status(500).json({ success: false, error: error });
             }
             res.json({ message: 'Logout successful' });
         });
@@ -269,7 +217,6 @@ exports.allUsers = asyncErrorHandler(async (req, res) => {
     try {
         // Fetch all users with role 'employee'
         const employees = await User.find({ role: 'employee' });
-        console.log(employees)
         return res.status(200).json({ success: true, users: employees });
     } catch (error) {
         console.error('Error fetching users:', error);

@@ -2,13 +2,14 @@
 const express = require("express");
 const MyCustomErrorType = require('./myCustomErrorType');
 function errorHandler(err, req, res, next) {
-  console.error("Error:", err);
+  const error = []
   if (err instanceof MyCustomErrorType) {
     return res.status(400).json({ error: err.message });
   } else if (err.name === "ValidationError") {
     return res.status(400).json({ error: err.message });
   }
-  return res.status(500).json({ error: "Internal Server Error" });
+  error.push("Internal Server Error")
+  return res.status(500).json({ success: false, error: error });
 }
 
 module.exports = errorHandler;

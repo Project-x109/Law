@@ -1,64 +1,71 @@
 const secretKey = 'YourSuperSecretKeyHere1234567890';
 const jwt = require('jsonwebtoken');
+const moment = require('moment');
+
+function isValidDateOfBirth(value) {
+  console.log(value)
+  const allowedDateFormat = 'YYYY-MM-DD';
+  const formattedDate = moment(value).format(allowedDateFormat);
+  if (!moment(formattedDate, allowedDateFormat, true).isValid()) {
+    return false;
+  }
+  const minAllowedAge = 18;
+  const currentDate = moment();
+  const birthDate = moment(value, allowedDateFormat);
+  const age = currentDate.diff(birthDate, 'years');
+
+  if (age < minAllowedAge) {
+    return false;
+  }
+  return true;
+}
+
 const emailValidator = (email) => {
   const emailRegex = RegExp(
     /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i
   );
 
-  return !emailRegex.test(email);
+  return emailRegex.test(email);
 };
-const validatePassword = (password) => {
-  // Regular expressions for validation
-  const lengthRegex = /^.{8,}$/; // At least 8 characters
-  const capitalLetterRegex = /[A-Z]/; // At least one capital letter
-  const specialCharacterRegex = /[\W_]/; // At least one special character
-  const numberRegex = /\d/; // At least one digit
+const phoneValidator = (phoneNo) => {
+  const phoneRegx = RegExp(
+    /(\+\s*2\s*5\s*1\s*9\s*(([0-9]\s*){8}\s*))|(\+\s*2\s*5\s*1\s*9\s*(([0-9]\s*){8}\s*))|(0\s*9\s*(([0-9]\s*){8}))|(0\s*7\s*(([0-9]\s*){8}))/
+  )
 
-  const errors = [];
-
-  if (!lengthRegex.test(password)) {
-    errors.push('Password must be at least 8 characters long');
-  }
-
-  if (!capitalLetterRegex.test(password)) {
-    errors.push('Password must contain at least one capital letter');
-  }
-
-  if (!specialCharacterRegex.test(password)) {
-    errors.push('Password must contain at least one special character');
-  }
-
-  if (!numberRegex.test(password)) {
-    errors.push('Password must contain at least one number');
-  }
-
-  return errors;
-};
+  return phoneRegx.test(phoneNo);
+}
 const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization; // Assuming the token is included in the Authorization header
+  const token = req.headers.authorization;
+  const error = []
   if (!token) {
-    return res.status(401).json({ error: 'Unauthorized Error Here' });
+    error.push('Unauthorized Error')
+    return res.status(401).json({ success: false, error: error });
   }
 
   jwt.verify(token, secretKey, (err, decoded) => {
     if (err) {
-      return res.status(401).json({ error: 'Unauthorized Error Here' });
+      error.push('Unauthorized Error')
+      return res.status(401).json({ success: false, error: error });
+
     }
     req.user = decoded;
     next();
   });
 };
 const isAuthenticated = (req, res, next) => {
+  const error = []
   if (req.isAuthenticated()) {
-    console.log("this is the user", req.user)
     return next();
   } else {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
+    error.push('Unauthorized Error')
+    return res.status(401).json({ success: false, error: error });
+
   }
 };
 module.exports = {
   emailValidator,
-  validatePassword,
+  phoneValidator,
   verifyToken,
-  isAuthenticated
+  isAuthenticated,
+  isValidDateOfBirth
 };
