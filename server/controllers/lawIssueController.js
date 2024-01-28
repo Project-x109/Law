@@ -123,8 +123,6 @@ exports.getIssueById = asyncErrorHandler(async (req, res) => {
 
         // Check if the issue exists
         const lawIssue = await LawIssue.findById(issueId).populate('createdBy');
-        console.log(lawIssue)
-
         if (!lawIssue) {
             return res.status(404).json({ success: false, error: 'Law issue not found' });
         }
@@ -262,7 +260,6 @@ exports.exportLawIssues = asyncErrorHandler(async (req, res) => {
         const csvFilePath = path.join(__dirname, '../exports/lawIssues.csv');
         csv.writeToPath(csvFilePath, csvData)
             .on('finish', () => {
-                console.log('CSV file successfully written');
                 res.status(200).json({
                     success: true,
                     message: 'Law issue data exported successfully',

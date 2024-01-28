@@ -117,10 +117,6 @@ exports.resetPasswordToken = asyncErrorHandler(async (req, res) => {
     const error = [];
     try {
         const resetToken = await ResetToken.findOne({ token });
-        console.log("Reset Token:", resetToken);
-
-
-
         if (!resetToken) {
             error.push('Invalid or expired token');
             return res.status(404).json({ success: false, error: error });
@@ -132,22 +128,17 @@ exports.resetPasswordToken = asyncErrorHandler(async (req, res) => {
         }
 
         const user = await User.findById(resetToken.userId);
-        console.log("User:", user);
-
         if (!user) {
             error.push('User not found');
             return res.status(404).json({ success: false, error: error });
         }
 
         user.password = password;
-        console.log("New Password:", user.password);
-
         await user.save();
         await ResetToken.deleteOne({ _id: resetToken._id });
 
         res.status(200).json({ success: 'Password updated successfully' });
     } catch (err) {
-        console.log(err)
         error.push("Internal Server Error")
         return res.status(500).json({ success: false, error: error });
 

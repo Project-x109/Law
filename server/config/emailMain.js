@@ -151,17 +151,12 @@ async function sendEmailNotification(sharedWithEmails, todoText) {
   };
 
   try {
-    // Send the email
     await transporter.sendMail(mailOptions);
-    console.log("Email notification sent successfully");
   } catch (error) {
-    console.error("Error sending email notification:", error);
   }
 }
 
 async function sendForgetPasswordToken(sendto, token) {
-  // Create a transporter using the default SMTP transport
-  console.log(sendto, token)
   const transporter = nodemailer.createTransport({
     service: "Gmail", // Use your email service (e.g., Gmail)
     auth: {
@@ -175,7 +170,7 @@ async function sendForgetPasswordToken(sendto, token) {
     from: "amanuelgirma108@gmail.com", // Your email
     to: sendto.username, // Array of email addresses
     subject: "New Todo Added",
-/*     text: `A new todo has been added: ${token}`, */
+    /*     text: `A new todo has been added: ${token}`, */
     html: `<html>
     <head>
         <style>${exports.getCSS()}</style> 
@@ -203,9 +198,7 @@ async function sendForgetPasswordToken(sendto, token) {
   try {
     // Send the email
     await transporter.sendMail(mailOptions);
-    console.log("Email notification sent successfully");
   } catch (error) {
-    console.error("Error sending email notification:", error);
   }
 }
 

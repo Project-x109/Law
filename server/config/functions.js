@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const moment = require('moment');
 
 function isValidDateOfBirth(value) {
-  console.log(value)
   const allowedDateFormat = 'YYYY-MM-DD';
   const formattedDate = moment(value).format(allowedDateFormat);
   if (!moment(formattedDate, allowedDateFormat, true).isValid()) {

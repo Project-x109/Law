@@ -14,7 +14,7 @@ const validateLawIssueData = [
     check('issuedOfficer').optional({ nullable: true }).notEmpty().withMessage('Invalid issued officer'),
     check('issueOpenDate').optional({ nullable: true }).custom((value) => moment(value, true).isValid()).withMessage('Invalid issue open date'),
     check('issueDecisionDate').optional({ nullable: true }).custom((value) => moment(value, true).isValid()).withMessage('Invalid issue decision date'),
-    check('issueLevel').optional({ nullable: true }).notEmpty().withMessage('Invalid issue level'),
+    check('issueLevel').optional({ nullable: true }).notEmpty().withMessage('Invalid issue level').isIn(['low', 'medium', 'high']).withMessage('Issue levelshould be only high,low and medium'),
     check('legalMotions').optional({ nullable: true }).notEmpty().withMessage('Invalid Legal Motion'),
     check('status').optional({ nullable: true }).isIn(['pending', 'processing', 'closed']).withMessage('Invalid status'),
 ];

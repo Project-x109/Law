@@ -19,8 +19,6 @@ const sendPerformanceReviewReminderEmail = async ({ to, subject, body }) => {
             subject,
             text: body,
         });
-
-        console.log(`Performance review reminder email sent to: ${to}`);
     } catch (error) {
         console.error(`Error sending email: ${error.message}`);
         throw error;
