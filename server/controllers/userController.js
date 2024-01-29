@@ -50,6 +50,7 @@ exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
             birthDate: dateOfBirth,
             phoneNumber: phoneNo,
             role: 'employee',
+            status: 'pending'
         });
         await newUser.save();
         logger.info(`User registered with ID: ${newUser._id}`);
@@ -101,6 +102,30 @@ exports.changePassword = asyncErrorHandler(async (req, res) => {
         return res.status(401).json({ success: false, error: error });
     }
     user.password = password;
+    try {
+        await user.save();
+        return res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        error.push("Internal Server Error")
+        return res.status(500).json({ success: false, error: error });
+
+    }
+});
+exports.changeNewUserPassword = asyncErrorHandler(async (req, res) => {
+    const { password } = req.body;
+    const error = []
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        error.push("User Not Found")
+        return res.status(404).json({ success: false, error: error });
+    }
+    const match = await bcrypt.compare(password, user.password);
+    if (match) {
+        error.push("New Password Can not be the same as the old password")
+        return res.status(401).json({ success: false, error: error });
+    }
+    user.password = password;
+    user.status = 'active';
     try {
         await user.save();
         return res.json({ success: true, message: 'Password updated successfully' });
@@ -210,8 +235,40 @@ exports.allUsers = asyncErrorHandler(async (req, res) => {
         const employees = await User.find({ role: 'employee' });
         return res.status(200).json({ success: true, users: employees });
     } catch (error) {
-        console.error('Error fetching users:', error);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
 })
+
+exports.deactivatedAccounts = asyncErrorHandler(async (req, res) => {
+    const error = []
+    try {
+        const deactivataedEmployees = await User.find({ status: 'blocked' });
+        return res.status(200).json({ success: true, users: deactivataedEmployees })
+    } catch (err) {
+        error.push('Internal Server Error');
+        return res.status(500).json({ success: false, error: error });
+    }
+})
+
+exports.changeUserStatus = asyncErrorHandler(async (req, res) => {
+    try {
+        const { id, status } = req.body;
+        console.log(id, status)
+        const error = [];
+        const user = await User.findByIdAndUpdate(id, { status }, { new: true });
+        if (!user) {
+            error.push("Invalid User ID");
+            return res.status(400).json({ success: false, error: error });
+        }
+        if (user.status === 'blocked' && status === 'blocked') {
+            error.push("You Can only change the status of blocked account");
+            return res.status(400).json({ success: false, error: error });
+        }
+        return res.status(201).json({ success: true, data: user, message: 'User Has been Unblocked Successfully' });
+    } catch (err) {
+        console.error(err);
+        const error = ['Internal Server Error'];
+        return res.status(500).json({ success: false, error: error });
+    }
+});

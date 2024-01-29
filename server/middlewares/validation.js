@@ -147,6 +147,33 @@ const validateOldPasswordChange = [
         }).withMessage('New Password and Confirm Password do not match'),
 ]
 
+const validateNewUserPassword = [
+    check('password')
+        .notEmpty().withMessage('New Password is Required')
+        .isLength({ min: 8 }).withMessage('New Password must be at least 8 characters')
+        .matches(/[a-zA-Z]/).withMessage('New Password must contain at least one letter')
+        .matches(/[0-9]/).withMessage('New Password must contain at least one number')
+        .matches(/[^a-zA-Z0-9]/).withMessage('New Password must contain at least one special character'),
+    check('confirmPassword')
+        .notEmpty().withMessage('Confirm Password is Required')
+        .custom((value, { req }) => {
+            if (value !== req.body.password) {
+                throw new Error('New Password and Confirm Password do not match');
+            }
+            return true;
+        }).withMessage('New Password and Confirm Password do not match')
+]
+const validateStatusChange = [
+    check('id')
+        .notEmpty()
+        .withMessage('User ID is required'),
+    check('status')
+        .notEmpty()
+        .withMessage('Status is required')
+        .isIn(['pending', 'active', 'blocked'])
+        .withMessage('Invalid status value. Status must be one of: pending, active, blocked'),
+];
+
 
 module.exports = {
     validateLawIssueData,
@@ -157,5 +184,7 @@ module.exports = {
     validateUserLogin,
     validateChangePassword,
     validateOldPasswordChange,
+    validateNewUserPassword,
+    validateStatusChange,
     handleValidationErrors,
 };

@@ -25,16 +25,23 @@ const UserSchema = new Schema({
     required: true
   },
   phoneNumber: {
-    type: String, // or Number depending on your requirements
+    type: String,
     required: true,
-    // Add a custom validator for phone number format if needed
   },
   role: {
     type: String,
     enum: ['employee', 'admin', 'superadmin'],
     default: 'employee',
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'active', 'blocked'],
+    default: 'pending'
+  },
+  passwordMistakeCounter: {
+    type: Number,
+    default: 0
   }
-  // Other user-related data can be included here
 });
 
 UserSchema.pre("save", function (next) {

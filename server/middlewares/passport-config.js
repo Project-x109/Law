@@ -14,10 +14,21 @@ passport.use(
         if (!user) {
           return done(null, false, { message: "Incorrect username." });
         }
+        if (user.status === 'blocked') {
+          return done(null, false, { message: "Your account is blocked. Contact the adminstrator" });
+        }
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
+          user.passwordMistakeCounter += 1;
+          if (user.passwordMistakeCounter >= 3) {
+            user.status = 'blocked';
+            user.passwordMistakeCounter = 0;
+          }
+          await user.save();
           return done(null, false, { message: "Incorrect password." });
         }
+        user.passwordMistakeCounter = 0;
+        await user.save();
         return done(null, user);
       } catch (error) {
         return done(error);
