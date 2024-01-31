@@ -41,7 +41,10 @@ const UserSchema = new Schema({
   passwordMistakeCounter: {
     type: Number,
     default: 0
-  }
+  },
+  createdAt: {
+    type: Date
+  },
 });
 
 UserSchema.pre("save", function (next) {

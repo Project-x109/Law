@@ -104,9 +104,7 @@ exports.updateIssue = asyncErrorHandler(async (req, res) => {
 });
 exports.getAllIssues = asyncErrorHandler(async (req, res) => {
     try {
-        // Get all law issues from the database
         const allLawIssues = await LawIssue.find().populate('createdBy');
-
         res.status(200).json({
             success: true,
             message: "All law issues retrieved successfully",
@@ -140,9 +138,6 @@ exports.getIssueById = asyncErrorHandler(async (req, res) => {
             lawIssue,
         });
     } catch (error) {
-        console.error('Error getting law issue by ID:', error);
-
-        // Handle other internal server errors
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
@@ -483,45 +478,54 @@ exports.getUserDashboardSummary = asyncErrorHandler(async (req, res) => {
     }
 });
 exports.changeIssueStatus = asyncErrorHandler(async (req, res) => {
+    const error = [];
     try {
-        const { issueId, newStatus } = req.body;
-        if (!issueId || !newStatus) {
-            return res.status(400).json({ success: false, error: 'Issue ID and new status are required' });
-        }
-        const issue = await LawIssue.findById(issueId);
+        const { id, status } = req.body;
+        const issue = await LawIssue.findById(id);
         if (!issue) {
-            return res.status(404).json({ success: false, error: 'Law issue not found' });
+            error.push('Law issue not found');
+            return res.status(404).json({ success: false, error: error });
         }
         if (issue.createdBy.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ success: false, error: 'Unauthorized to update this law issue' });
+            error.push('Unauthorized to update this law issue');
+            return res.status(403).json({ success: false, error: error });
         }
-        issue.status = newStatus;
+        if (issue.status === 'closed') {
+            error.push('You can\'t change the status of closed issues');
+            return res.status(403).json({ success: false, error: error });
+        }
+        issue.status = status;
         await issue.save();
 
         res.status(200).json({
             success: true,
-            message: `Law issue status updated to ${newStatus} successfully`,
+            message: `Law issue status updated to ${status} successfully`,
             lawIssue: issue,
         });
-    } catch (error) {
-        console.error('Error changing issue status:', error);
-
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ success: false, error: error.message });
+    } catch (err) {
+        if (err.name === 'ValidationError') {
+            error.push(err.message)
+            return res.status(400).json({ success: false, error: error });
         }
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
 exports.getRecentActivities = asyncErrorHandler(async (req, res) => {
+    const error = [];
     try {
         const recentActivities = await LawIssue.find()
-            .sort({ updatedAt: -1 })
-            .limit(10);
+            .sort({ updatedAt: -1, createdAt: -1 })
+            .limit(10).populate('createdBy');
         const formattedActivities = recentActivities.map(activity => {
             return {
                 issueId: activity._id,
                 issueType: activity.issueType,
                 status: activity.status,
+                issueRegion: activity.issueRegion,
+                requestingDepartment: activity.requestingDepartment,
+                issueLevel: activity.issueLevel,
+                legalMotions: activity.legalMotions,
+                createdBy: activity.createdBy,
                 updatedAt: activity.updatedAt,
                 updatedBy: activity.updatedBy,
             };
@@ -531,30 +535,39 @@ exports.getRecentActivities = asyncErrorHandler(async (req, res) => {
             message: "Recent activities retrieved successfully",
             recentActivities: formattedActivities,
         });
-    } catch (error) {
-        console.error('Error retrieving recent activities:', error);
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    } catch (err) {
+        if (err.name === 'ValidationError') {
+            error.push(err.message)
+            return res.status(400).json({ success: false, error: error });
+        }
+        error.push('Internal Server Error')
+        res.status(500).json({ success: false, error: error });
     }
 });
 exports.getRecentActivity = asyncErrorHandler(async (req, res) => {
+    const error = [];
     try {
         const userId = req.user._id;
-
-        // Check if the user exists
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ success: false, error: 'User not found' });
+            error.push('User not found')
+            return res.status(404).json({ success: false, error: error });
         }
         const recentActivities = await LawIssue.find({
             createdBy: userId,
         })
-            .sort({ updatedAt: -1 })
-            .limit(10);
+            .sort({ updatedAt: -1})
+            .limit(10).populate('createdBy');;
         const formattedActivities = recentActivities.map(activity => {
             return {
                 issueId: activity._id,
                 issueType: activity.issueType,
                 status: activity.status,
+                issueRegion: activity.issueRegion,
+                requestingDepartment: activity.requestingDepartment,
+                issueLevel: activity.issueLevel,
+                legalMotions: activity.legalMotions,
+                createdBy: activity.createdBy,
                 updatedAt: activity.updatedAt,
                 updatedBy: activity.updatedBy,
             };
@@ -564,9 +577,13 @@ exports.getRecentActivity = asyncErrorHandler(async (req, res) => {
             message: `Recent activities for ${user.username}`,
             recentActivities: formattedActivities,
         });
-    } catch (error) {
-        console.error('Error fetching recent activities:', error);
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    } catch (err) {
+        if (err.name === 'ValidationError') {
+            error.push(err.message)
+            return res.status(400).json({ success: false, error: error });
+        }
+        error.push('Internal Server Error')
+        res.status(500).json({ success: false, error: error });
     }
 });
 exports.getUserPerformance = asyncErrorHandler(async (req, res) => {

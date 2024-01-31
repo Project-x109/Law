@@ -32,11 +32,12 @@ const {
 const {
     validateLawIssueData,
     validateLawIssueDataComment,
+    changeIssueStatusValidation,
     handleValidationErrors } = require("../middlewares/validation")
 
-router.route("/addissue").post(isAuthenticated, verifyToken,validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), addIssue)
+router.route("/addissue").post(isAuthenticated, verifyToken, validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), addIssue)
 router.route("/updateissue/:issueId").put(isAuthenticated, verifyToken, validateLawIssueData, handleValidationErrors, authorize(["admin", "employee"]), updateIssue);
-router.route("/getallissues").get(isAuthenticated, verifyToken, authorize(["admin","employee"]), getAllIssues);
+router.route("/getallissues").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getAllIssues);
 router.route("/addcomment/:issueId").post(isAuthenticated, verifyToken, validateLawIssueDataComment, handleValidationErrors, authorize(["admin", "employee"]), addComment);
 router.route("/getcomment/:issueId").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getComments);
 router.route("/updatecomment/:issueId/:commentId").put(isAuthenticated, verifyToken, validateLawIssueDataComment, handleValidationErrors, authorize(["admin", "employee"]), updateComment);
@@ -48,7 +49,7 @@ router.route("/deletecomment/:issueId/:commentId").delete(isAuthenticated, verif
 router.route("/exportlawissues").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), exportLawIssues);
 router.route("/getdashboardsummery").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getDashboardSummary);
 router.route("/getuserdashboardsummary").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getUserDashboardSummary);
-router.route("/changeissuestatus").put(isAuthenticated, verifyToken, authorize(["admin", "employee"]), changeIssueStatus);
+router.route("/changeissuestatus").put(isAuthenticated, verifyToken,changeIssueStatusValidation, handleValidationErrors,  authorize(["admin", "employee"]), changeIssueStatus);
 router.route("/getrecentactivities").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getRecentActivities);
 router.route("/getrecentactivity").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getRecentActivity);
 router.route("/getuserperformance/:userId").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getUserPerformance);

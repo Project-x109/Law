@@ -173,7 +173,16 @@ const validateStatusChange = [
         .isIn(['pending', 'active', 'blocked'])
         .withMessage('Invalid status value. Status must be one of: pending, active, blocked'),
 ];
-
+const changeIssueStatusValidation = [
+    check('id')
+        .notEmpty()
+        .withMessage('Issue ID is required'),
+    check('status')
+        .notEmpty()
+        .withMessage('Status is required')
+        .isIn(['pending', 'processing', 'closed'])
+        .withMessage('Invalid status value. Status must be one of: pending, active, blocked'),
+]
 
 module.exports = {
     validateLawIssueData,
@@ -186,5 +195,6 @@ module.exports = {
     validateOldPasswordChange,
     validateNewUserPassword,
     validateStatusChange,
+    changeIssueStatusValidation,
     handleValidationErrors,
 };

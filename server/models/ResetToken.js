@@ -14,6 +14,9 @@ const resetTokenSchema = new mongoose.Schema({
         type: Date,
         required: true,
     },
+    createdAt: {
+        type: Date
+    },
 });
 
 const ResetToken = mongoose.model('ResetToken', resetTokenSchema);
