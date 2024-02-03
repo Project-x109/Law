@@ -61,10 +61,27 @@ const isAuthenticated = (req, res, next) => {
 
   }
 };
+const formatResolutionTime = (milliseconds) => {
+  const seconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  const formattedTime = `${days} days, ${hours % 24} hours, ${minutes % 60} minutes, ${seconds % 60} seconds`;
+  return formattedTime;
+}
+const getInitials = (firstName, lastName) => {
+  const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+  const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+
+  return `${firstInitial}${lastInitial}`;
+};
 module.exports = {
   emailValidator,
   phoneValidator,
   verifyToken,
   isAuthenticated,
-  isValidDateOfBirth
+  isValidDateOfBirth,
+  formatResolutionTime,
+  getInitials
 };
