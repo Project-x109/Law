@@ -5,8 +5,9 @@ const path = require('path');
 const fs = require('fs');
 const moment = require('moment');
 const csv = require('fast-csv');
-const { ObjectId } = require('mongodb');
-const { formatResolutionTime,getInitials } = require('../config/functions')
+const mongoose = require('mongoose');
+const { formatResolutionTime, getInitials } = require('../config/functions')
+const { startOfWeek, endOfWeek } = require('date-fns');
 
 exports.addIssue = asyncErrorHandler(async (req, res) => {
     const error = [];
@@ -644,13 +645,13 @@ exports.getAllUserPerformances = asyncErrorHandler(async (req, res) => {
                 userId,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                initials:getInitials(user.firstName,user.lastName),
+                initials: getInitials(user.firstName, user.lastName),
                 numberOfResolvedIssues,
                 averageResolutionTime,
             });
         }
         userPerformances.sort((a, b) => b.numberOfResolvedIssues - a.numberOfResolvedIssues);
-        const topUserPerformances = userPerformances.slice(0, 5);
+        const topUserPerformances = userPerformances.slice(0, 10);
 
         res.status(200).json({
             success: true,
@@ -664,26 +665,56 @@ exports.getAllUserPerformances = asyncErrorHandler(async (req, res) => {
 });
 exports.getPriorityIssues = asyncErrorHandler(async (req, res) => {
     try {
-        const userId = req.user._id;
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ success: false, error: 'User not found' });
+        let userId;
+        const userRole = req.user.role;
+
+        if (userRole === 'admin') {
+            const highCount = await LawIssue.countDocuments({ issueLevel: 'high' });
+            const mediumCount = await LawIssue.countDocuments({ issueLevel: 'medium' });
+            const lowCount = await LawIssue.countDocuments({ issueLevel: 'low' });
+            res.status(200).json({
+                success: true,
+                message: 'Priority issue counts for all users',
+                counts: {
+                    high: highCount,
+                    medium: mediumCount,
+                    low: lowCount,
+                },
+            });
+        } else {
+            userId = req.user._id;
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ success: false, error: 'User not found' });
+            }
+
+            const highCount = await LawIssue.countDocuments({
+                createdBy: new mongoose.Types.ObjectId(userId),
+                issueLevel: 'high',
+            });
+
+            const mediumCount = await LawIssue.countDocuments({
+                createdBy: new mongoose.Types.ObjectId(userId),
+                issueLevel: 'medium',
+            });
+
+            const lowCount = await LawIssue.countDocuments({
+                createdBy: new mongoose.Types.ObjectId(userId),
+                issueLevel: 'low',
+            });
+
+            res.status(200).json({
+                success: true,
+                message: `Priority issue counts for ${user.username}`,
+                counts: {
+                    high: highCount,
+                    medium: mediumCount,
+                    low: lowCount,
+                },
+            });
         }
-        const priorityIssues = await LawIssue.find({
-            createdBy: userId,
-            $or: [
-                { issueLevel: 'high' },
-                { issueLevel: 'low' },
-                { issueLevel: 'medium' },
-            ],
-        });
-        res.status(200).json({
-            success: true,
-            message: `High, low or medium issues created by ${user.username}`,
-            issues: priorityIssues,
-        });
     } catch (error) {
-        console.error('Error fetching priority issues by createdBy:', error);
+        console.error('Error fetching priority issue counts:', error);
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
@@ -731,59 +762,50 @@ exports.getIssuesCreatedByUser = asyncErrorHandler(async (req, res) => {
         res.status(500).json({ success: false, error: error });
     }
 });
-
-exports.getIssuesByStatusForUser = asyncErrorHandler(async (req, res) => {
+exports.getWeeklyReview = asyncErrorHandler(async (req, res) => {
+    const error = []
     try {
         const userId = req.user._id;
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ success: false, error: 'User not found' });
+        if (!userId) {
+            error.push('userId is mandatory');
+            res.status(403).json({ success: false, error: error })
         }
-        const issuesByStatusAggregation = await LawIssue.aggregate([
-            {
-                $match: { createdBy: userId },
-            },
-            {
-                $group: {
-                    _id: "$status",
-                    count: { $sum: 1 },
+        const startDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+        const endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
+        let statusDistribution
+        if (req.user.role === "employee") {
+            statusDistribution = await LawIssue.aggregate([
+                {
+                    $match: {
+                        createdBy: new mongoose.Types.ObjectId(userId),
+                        createdAt: { $gte: startDate, $lte: endDate },
+                    },
                 },
-            },
-        ]);
-
-        res.status(200).json({
-            success: true,
-            message: `Number of issues by status for user ${user.username}`,
-            data: issuesByStatusAggregation,
-        });
-    } catch (error) {
-        console.error('Error fetching issues by status for user:', error);
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
-    }
-});
-exports.getCreatedByTotalIssues = asyncErrorHandler(async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const totalIssues = await LawIssue.countDocuments({ createdBy: userId });
-        res.status(200).json({ success: true, totalIssues });
-    } catch (error) {
-        console.error('Error retrieving total issues:', error);
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
-    }
-});
-exports.getCreatedByStatusDistribution = asyncErrorHandler(async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const statusDistribution = await LawIssue.aggregate([
-            { $match: { createdBy: userId } },
-            {
-                $group: {
-                    _id: "$status",
-                    count: { $sum: 1 },
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 },
+                    },
                 },
-            },
-        ]);
-
+            ]);
+        } else {
+            statusDistribution = await LawIssue.aggregate([
+                {
+                    $match: {
+                        createdAt: { $gte: startDate, $lte: endDate },
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 },
+                    },
+                },
+            ]);
+        }
+        if (!statusDistribution) {
+            statusDistribution = [];
+        }
         const formattedStatusDistribution = statusDistribution.reduce(
             (acc, { _id, count }) => {
                 acc[_id] = count;
@@ -792,9 +814,37 @@ exports.getCreatedByStatusDistribution = asyncErrorHandler(async (req, res) => {
             {}
         );
 
-        res.status(200).json({ success: true, statusDistribution: formattedStatusDistribution });
+        res.status(200).json({ success: true, weeklyReview: formattedStatusDistribution });
     } catch (error) {
-        console.error('Error retrieving status distribution:', error);
+        console.error('Error retrieving weekly review:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+exports.getDepartmentWiseAnalysis = asyncErrorHandler(async (req, res) => {
+    try {
+        const departmentAnalysis = await LawIssue.aggregate([
+            {
+                $group: {
+                    _id: "$requestingDepartment",
+                    totalIssues: { $sum: 1 },
+                },
+
+            },
+            {
+                $sort: { totalIssues: -1 },
+            },
+            {
+                $limit: 5,
+            },
+        ]);
+
+        res.status(200).json({
+            success: true,
+            message: "Department-wise Analysis",
+            data: departmentAnalysis,
+        });
+    } catch (error) {
+        console.error('Error fetching Department-wise Analysis:', error);
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });

@@ -3,30 +3,29 @@ const { verifyToken, isAuthenticated } = require("../config/functions")
 const authorize = require('../middlewares/authorizationMiddleware');
 const router = express.Router();
 const {
-    addIssue,
-    updateIssue,
-    getAllIssues,
-    getIssueById,
-    getIssuesByCreatedBy,
+    addIssue, //Used
+    updateIssue,//Used
+    getAllIssues,//Used
+    getIssueById,//Used
+    getIssuesByCreatedBy,//Used
     deleteIssue,
     exportLawIssues,
     addComment,
     getComments,
     updateComment,
     deleteComment,
-    getDashboardSummary,
-    getUserDashboardSummary,
-    changeIssueStatus,
-    getRecentActivities,
-    getRecentActivity,
-    getUserPerformance,
-    getAllUserPerformances,
-    getPriorityIssues,
-    getIssuesByLogin,
-    getIssuesCreatedByUser,
-    getIssuesByStatusForUser,
-    getCreatedByTotalIssues,
-    getCreatedByStatusDistribution
+    getDashboardSummary,//Used
+    getUserDashboardSummary,//Used
+    changeIssueStatus,//Used
+    getRecentActivities,//Used
+    getRecentActivity,//Used
+    getUserPerformance,//Used
+    getAllUserPerformances,//Used
+    getPriorityIssues,//used
+    getIssuesByLogin,//used
+    getIssuesCreatedByUser,//used
+    getWeeklyReview,//Used
+    getDepartmentWiseAnalysis
 
 } = require("../controllers/lawIssueController")
 const {
@@ -49,14 +48,13 @@ router.route("/deletecomment/:issueId/:commentId").delete(isAuthenticated, verif
 router.route("/exportlawissues").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), exportLawIssues);
 router.route("/getdashboardsummery").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getDashboardSummary);
 router.route("/getuserdashboardsummary").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getUserDashboardSummary);
-router.route("/changeissuestatus").put(isAuthenticated, verifyToken,changeIssueStatusValidation, handleValidationErrors,  authorize(["admin", "employee"]), changeIssueStatus);
+router.route("/changeissuestatus").put(isAuthenticated, verifyToken, changeIssueStatusValidation, handleValidationErrors, authorize(["admin", "employee"]), changeIssueStatus);
 router.route("/getrecentactivities").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getRecentActivities);
 router.route("/getrecentactivity").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getRecentActivity);
 router.route("/getuserperformance/:userId").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getUserPerformance);
 router.route("/getalluserperformances").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getAllUserPerformances);
 router.route("/priority-issues").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getPriorityIssues);
 router.route("/total-issues-by-user").get(isAuthenticated, verifyToken, getIssuesCreatedByUser);
-router.route("/issues-by-status").get(isAuthenticated, verifyToken, getIssuesByStatusForUser);
-router.route("/total-issues").get(isAuthenticated, verifyToken, getCreatedByTotalIssues);
-router.route("/status-distribution").get(isAuthenticated, verifyToken, getCreatedByStatusDistribution);
+router.route("/get-weekly-review").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getWeeklyReview)
+router.route("/get-department-wise-analyis").get(isAuthenticated, verifyToken, authorize(["admin", "employee"]), getDepartmentWiseAnalysis)
 module.exports = router;
