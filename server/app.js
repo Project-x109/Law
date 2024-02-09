@@ -16,20 +16,25 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(session({ secret: 'ABCDEFGHSABSDBHJCS', resave: false, saveUninitialized: false, store: store, cookie: { httpOnly: false, sameSite: 'strict', maxAge: 1000 * 60 * 60 * 24, }, }));
 app.use(csrf({ cookie: true }));
+app.use((req, res, next) => {
+    var token = req.csrfToken();
+    res.cookie('XSRF-TOKEN', token);
+    res.locals.csrfToken = token;
+    next();
+})
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config({ path: "server/config/config.env" });
 }
 
 app.use((req, res, next) => {
-    console.log("CSRF Token:", req.csrfToken());
-   // console.log("Request:", req);
+    console.log("CSRF Token:", token);
     next();
 });
 app.use(passport.initialize());
 app.use(passport.session());
 app.get('/get-csrf-token', (req, res) => {
     console.log(req.csrfToken())
-    res.json({ csrfToken: req.csrfToken() });
+    res.json({ csrfToken: token });
 });
 app.use(logMiddleware);
 app.use("/api/v1", user);
