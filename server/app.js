@@ -26,7 +26,7 @@ app.use(
         store: store,
         cookie: {
             httpOnly: true,
-            sameSite: 'lax',
+            sameSite: 'strict',
             maxAge: 1000 * 60 * 60 * 24,
         },
     })
