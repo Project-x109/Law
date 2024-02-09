@@ -20,7 +20,6 @@ app.use(express.json({ limit: "50mb" }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(csrf({ cookie: true }));
 app.use(
     session({
         secret: 'ABCDEFGHSABSDBHJCS',
@@ -37,7 +36,7 @@ app.use(
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config({ path: "server/config/config.env" });
 }
-
+app.use(csrf());
 app.use(passport.initialize());
 app.use(passport.session());
 app.get('/get-csrf-token', (req, res) => {
