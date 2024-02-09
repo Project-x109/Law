@@ -38,7 +38,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 app.use(csrf({ cookie: true }));
 app.use((req, res, next) => {
-    res.locals.csrfToken = req.csrfToken();
+    console.log("CSRF Token:", req.csrfToken());
+    console.log("Request:", req);
     next();
 });
 app.use(passport.initialize());
@@ -53,10 +54,6 @@ app.use("/api/v1", lawIssue);
 app.get("/", (req, res) => {
     res.send("Server is Running! 🚀");
 });
-app.use((req, res, next) => {
-    console.log("CSRF Token:", req.csrfToken());
-    console.log("Request:", req);
-    next();
-});
+
 app.use(errorHandler);
 module.exports = app;
