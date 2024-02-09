@@ -45,10 +45,10 @@ app.use((req, res, next) => {
 
 // CSRF token validation middleware
 app.use((err, req, res, next) => {
+    const error = []
     if (err.code !== 'EBADCSRFTOKEN') return next(err);
-
-    // Handle CSRF token errors here
-    res.status(403).json({ success: false, error: 'Invalid CSRF token' });
+    error.push('Invalid CSRF token')
+    res.status(403).json({ success: false, error: error });
 });
 
 if (process.env.NODE_ENV !== "production") {
