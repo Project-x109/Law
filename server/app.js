@@ -25,7 +25,7 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24,
     },
 }));
-app.use(csrf({ cookie: true }));
+app.use(csrf({ cookie: false }));
 app.use((req, res, next) => {
     const token = req.csrfToken(); // Retrieve CSRF token
     res.cookie('XSRF-TOKEN', token);
