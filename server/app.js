@@ -11,7 +11,7 @@ const user = require("./routes/userRoutes");
 const lawIssue = require("./routes/lawIssueRoutes")
 
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(session({ secret: 'ABCDEFGHSABSDBHJCS', resave: false, saveUninitialized: false, store: store, cookie: { httpOnly: false, sameSite: 'strict', maxAge: 1000 * 60 * 60 * 24, }, }));
