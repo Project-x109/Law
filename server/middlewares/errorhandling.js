@@ -8,7 +8,7 @@ function errorHandler(err, req, res, next) {
   } else if (err.name === "ValidationError") {
     return res.status(400).json({ error: err.message });
   }
-  error.push("Internal Server Error")
+  error.push("Internal Server Error at error handling")
   return res.status(500).json({ success: false, error: error });
 }
 
