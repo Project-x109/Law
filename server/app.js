@@ -36,7 +36,7 @@ app.use(
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config({ path: "server/config/config.env" });
 }
-app.use(csrf({ cookie: true }));
+app.use(csrf({ cookie: { sameSite: 'lax' } }));
 app.use((req, res, next) => {
     console.log("CSRF Token:", req.csrfToken());
     console.log("Request:", req);
