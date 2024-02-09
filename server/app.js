@@ -36,7 +36,11 @@ app.use(
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config({ path: "server/config/config.env" });
 }
-app.use(csrf());
+app.use(csrf({ cookie: true }));
+app.use((req, res, next) => {
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
 app.use(passport.initialize());
 app.use(passport.session());
 app.get('/get-csrf-token', (req, res) => {
