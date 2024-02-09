@@ -47,8 +47,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/get-csrf-token', (req, res) => {
-    const token = req.csrfToken(); // Retrieve CSRF token
-    res.json({ csrfToken: token });
+    res.json({ csrfToken: res.locals.csrfToken });
 });
 
 app.use(logMiddleware);
