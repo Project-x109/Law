@@ -175,7 +175,7 @@ exports.login = asyncErrorHandler(async (req, res, next) => {
     try {
         passport.authenticate("local", async (err, user, info) => {
             if (err) {
-                error.push("Internal Server Error")
+                error.push("Internal Server Error on Login")
                 return res.status(500).json({ success: false, error: error });
             }
             if (info) {
@@ -184,7 +184,7 @@ exports.login = asyncErrorHandler(async (req, res, next) => {
             }
             req.logIn(user, async (err) => {
                 if (err) {
-                    error.push("Internal Server Error")
+                    error.push("Internal Server Error on Login")
                     return res.status(500).json({ success: false, error: error });
                 }
                 req.session.user = { username: user.username };
