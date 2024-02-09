@@ -9,28 +9,12 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const user = require("./routes/userRoutes");
 const lawIssue = require("./routes/lawIssueRoutes")
-app.use(
-    cors({
-        origin: ["http://localhost:3000", "http://192.168.56.1:3000"],
-        credentials: true,
-    })
-);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
-app.use(
-    session({
-        secret: 'ABCDEFGHSABSDBHJCS',
-        resave: false,
-        saveUninitialized: false,
-        store: store,
-        cookie: {
-            httpOnly: true,
-            sameSite: 'strict',
-            maxAge: 1000 * 60 * 60 * 24,
-        },
-    })
-);
+app.use(session({ secret: 'ABCDEFGHSABSDBHJCS', resave: false, saveUninitialized: false, store: store, cookie: { httpOnly: false, sameSite: 'strict', maxAge: 1000 * 60 * 60 * 24, }, }));
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config({ path: "server/config/config.env" });
 }
