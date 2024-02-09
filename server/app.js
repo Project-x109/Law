@@ -25,11 +25,15 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24,
     },
 }));
-app.use(csrf({ cookie: false }));
+
+// Create CSRF middleware
+const csrfProtection = csrf({ cookie: true });
+app.use(csrfProtection);
+
+// Set CSRF token in cookie and locals
 app.use((req, res, next) => {
-    const token = req.csrfToken(); // Retrieve CSRF token
-    res.cookie('XSRF-TOKEN', token);
-    res.locals.csrfToken = token; // Set CSRF token in locals
+    res.cookie('XSRF-TOKEN', req.csrfToken());
+    res.locals.csrfToken = req.csrfToken();
     next();
 });
 
@@ -42,13 +46,12 @@ app.use(passport.session());
 
 // Logging CSRF Token
 app.use((req, res, next) => {
-    console.log("CSRF Token:", res.locals.csrfToken); // Use res.locals.csrfToken
+    console.log("CSRF Token:", res.locals.csrfToken);
     next();
 });
 
 app.get('/get-csrf-token', (req, res) => {
-    console.log(res.locals.csrfToken)
-    res.json({ csrfToken: res.locals.csrfToken });
+    res.json({ csrfToken: req.csrfToken() });
 });
 
 app.use(logMiddleware);
