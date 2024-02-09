@@ -37,18 +37,26 @@ app.use((req, res, next) => {
     next();
 });
 
+// Logging CSRF Token
+app.use((req, res, next) => {
+    console.log("CSRF Token:", res.locals.csrfToken);
+    next();
+});
+
+// CSRF token validation middleware
+app.use((err, req, res, next) => {
+    if (err.code !== 'EBADCSRFTOKEN') return next(err);
+
+    // Handle CSRF token errors here
+    res.status(403).json({ success: false, error: 'Invalid CSRF token' });
+});
+
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config({ path: "server/config/config.env" });
 }
 
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Logging CSRF Token
-app.use((req, res, next) => {
-    console.log("CSRF Token:", res.locals.csrfToken);
-    next();
-});
 
 app.get('/get-csrf-token', (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
