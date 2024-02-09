@@ -16,7 +16,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(session({
     secret: 'ABCDEFGHSABSDBHJCS',
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     store: store,
     cookie: {
