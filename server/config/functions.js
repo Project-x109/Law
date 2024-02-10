@@ -53,9 +53,14 @@ const verifyToken = (req, res, next) => {
 };
 const isAuthenticated = (req, res, next) => {
   const error = []
+  console.log(req)
   try {
     if (req.isAuthenticated()) {
       return next();
+    } else {
+      error.push('Unauthorized Error at is authenticated')
+      return res.status(401).json({ success: false, error: error });
+
     }
   } catch (err) {
     console.log(err)
