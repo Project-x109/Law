@@ -10,7 +10,7 @@ const session = require("express-session");
 const userRoutes = require("./routes/userRoutes");
 const lawIssueRoutes = require("./routes/lawIssueRoutes");
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     origin: ["http://localhost:3000", "https://law-front-cj39.vercel.app"],
