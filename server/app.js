@@ -30,7 +30,7 @@ app.use(session({
 }));
 
 // Create CSRF middleware
-const csrfProtection = csrf({ cookie: true });
+const csrfProtection = csrf({ cookie: true, name: 'XSRF-TOKEN' });
 app.use(csrfProtection);
 
 // Set CSRF token in cookie and locals
