@@ -37,13 +37,13 @@ const verifyToken = (req, res, next) => {
   const token = req.headers.authorization;
   const error = []
   if (!token) {
-    error.push('Unauthorized Error')
+    error.push('Unauthorized Error at verify token')
     return res.status(401).json({ success: false, error: error });
   }
 
   jwt.verify(token, secretKey, (err, decoded) => {
     if (err) {
-      error.push('Unauthorized Error')
+      error.push('Unauthorized Error at verify token')
       return res.status(401).json({ success: false, error: error });
 
     }
@@ -53,12 +53,18 @@ const verifyToken = (req, res, next) => {
 };
 const isAuthenticated = (req, res, next) => {
   const error = []
-  if (req.isAuthenticated()) {
-    return next();
-  } else {
-    error.push('Unauthorized Error')
-    return res.status(401).json({ success: false, error: error });
+  try {
+    if (req.isAuthenticated()) {
+      return next();
+    } else {
+      error.push('Unauthorized Error at is authenticated')
+      return res.status(401).json({ success: false, error: error });
 
+    }
+  } catch (err) {
+    console.log(err)
+    error.push('error at catch block');
+    return res.status(500).json({ success: false, error: error })
   }
 };
 const formatResolutionTime = (milliseconds) => {
