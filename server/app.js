@@ -37,7 +37,7 @@ const csrfProtection = csrf({
     secure: true, // CSRF token is only sent over HTTPS
     httpOnly: true, // CSRF token is not accessible to client-side scripts
   },
-  name: 'X-Csrf-Token:',
+  name: 'X-Csrf-Token',
   value: (req) => req.csrfToken(),
   failAction: (req, res) => {
     res.status(403).send('Invalid CSRF token');
@@ -47,7 +47,7 @@ app.use(csrfProtection);
 
 // Set CSRF token in cookie and locals
 app.use((req, res, next) => {
-  res.cookie('X-Csrf-Token:', req.csrfToken());
+  res.cookie('X-Csrf-Token', req.csrfToken());
   res.locals.csrfToken = req.csrfToken();
   next();
 });
