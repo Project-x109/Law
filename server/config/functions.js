@@ -52,22 +52,23 @@ const verifyToken = (req, res, next) => {
   });
 };
 const isAuthenticated = (req, res, next) => {
-  const error = []
-  console.log(req)
+  const error = [];
   try {
+    console.log("User authenticated:", req.isAuthenticated());
     if (req.isAuthenticated()) {
       return next();
     } else {
-      error.push('Unauthorized Error at is authenticated')
+      error.push("Unauthorized Error at is authenticated");
+      console.error("Unauthorized access:", req.originalUrl);
       return res.status(401).json({ success: false, error: error });
-
     }
   } catch (err) {
-    console.log(err)
-    error.push('error at catch block');
-    return res.status(500).json({ success: false, error: error })
+    console.error("Error in isAuthenticated middleware:", err);
+    error.push("Internal Server Error");
+    return res.status(500).json({ success: false, error: error });
   }
 };
+
 const formatResolutionTime = (milliseconds) => {
   const seconds = Math.floor(milliseconds / 1000);
   const minutes = Math.floor(seconds / 60);
