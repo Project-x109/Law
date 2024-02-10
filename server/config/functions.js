@@ -68,12 +68,7 @@ const isAuthenticated = (req, res, next) => {
     return res.status(500).json({ success: false, error: error });
   }
 };
-const csrfTokenChecker = (req, res, next) => {
-  if (req.csrfToken() !== req.headers['x-csrf-token']) {
-    return res.status(403).send("Invalid CSRF token");
-  }
-  next();
-};
+
 
 const formatResolutionTime = (milliseconds) => {
   const seconds = Math.floor(milliseconds / 1000);
@@ -97,6 +92,5 @@ module.exports = {
   isAuthenticated,
   isValidDateOfBirth,
   formatResolutionTime,
-  getInitials,
-  csrfTokenChecker
+  getInitials
 };

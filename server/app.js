@@ -9,7 +9,6 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const userRoutes = require("./routes/userRoutes");
 const lawIssueRoutes = require("./routes/lawIssueRoutes");
-const { csrfTokenChecker } = require("./config/functions.js")
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(
@@ -48,14 +47,14 @@ const csrfProtection = csrf({
 });
 app.use(csrfProtection);
 app.use((req, res, next) => {
-  res.cookie("X-CSRF-TOKEN", req.csrfToken());
+  res.cookie(req.csrfToken());
   res.locals.csrfToken = req.csrfToken();
   next();
 });
 app.use(passport.initialize());
 app.use(passport.session());
 app.use("/api/v1", userRoutes);
-app.use("/api/v1", csrfTokenChecker, lawIssueRoutes);
+app.use("/api/v1", lawIssueRoutes);
 app.get("/", (req, res) => {
   res.send("Server is Running! 🚀");
 });
