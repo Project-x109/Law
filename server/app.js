@@ -32,25 +32,21 @@ app.use(
     },
   })
 );
-
-// Create CSRF middleware
 const csrfProtection = csrf({
   cookie: {
-    maxAge: 24 * 60 * 60 * 1000, // CSRF token expires after 24 hours
-    secure: true, // CSRF token is only sent over HTTPS
-    httpOnly: true, // CSRF token is not accessible to client-side scripts
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: true,
+    httpOnly: true,
   },
-  name: "XSRF-TOKEN",
+  name: "X-CSRF-Token",
   value: (req) => req.csrfToken(),
   failAction: (req, res) => {
     res.status(403).send("Invalid CSRF token");
   },
 });
 app.use(csrfProtection);
-
-// Set CSRF token in cookie and locals
 app.use((req, res, next) => {
-  res.cookie("XSRF-TOKEN", req.csrfToken());
+  res.cookie("X-CSRF-Token", req.csrfToken());
   res.locals.csrfToken = req.csrfToken();
   next();
 });
