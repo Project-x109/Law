@@ -9,11 +9,12 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const userRoutes = require("./routes/userRoutes");
 const lawIssueRoutes = require("./routes/lawIssueRoutes");
+const { csrfTokenChecker } = require("./config/functions.js")
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://law-front-cj39.vercel.app","https://law-front-cj39-j83trmxt5-project-x109.vercel.app"],
+    origin: ["http://localhost:3000", "https://law-front-cj39.vercel.app", "https://law-front-cj39-j83trmxt5-project-x109.vercel.app"],
     credentials: true,
   })
 );
@@ -54,7 +55,7 @@ app.use((req, res, next) => {
 app.use(passport.initialize());
 app.use(passport.session());
 app.use("/api/v1", userRoutes);
-app.use("/api/v1", lawIssueRoutes);
+app.use("/api/v1", csrfTokenChecker, lawIssueRoutes);
 app.get("/", (req, res) => {
   res.send("Server is Running! 🚀");
 });
