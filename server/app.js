@@ -32,7 +32,7 @@ app.use(csrfProtection);
 
 // Set CSRF token in cookie and locals
 app.use((req, res, next) => {
-    res.cookie('X-CSRF-Token', req.csrfToken());
+    res.cookie('XSRF-TOKEN', req.csrfToken());
     res.locals.csrfToken = req.csrfToken();
     next();
 });
