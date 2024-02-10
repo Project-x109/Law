@@ -17,7 +17,7 @@ app.use(cookieParser());
 app.use(session({
     secret: 'ABCDEFGHSABSDBHJCS',
     resave: true,
-    saveUninitialized: false,
+    saveUninitialized: true,
     store: store,
     cookie: {
         httpOnly: true,
