@@ -53,20 +53,11 @@ const verifyToken = (req, res, next) => {
 };
 const isAuthenticated = (req, res, next) => {
   const error = [];
-  try {
-    console.log("User authenticated:", req.isAuthenticated());
-    if (req.isAuthenticated()) {
-      return next();
-    } else {
-      error.push("Unauthorized Error at is authenticated");
-      console.error("Unauthorized access:", req.originalUrl);
-      return res.status(401).json({ success: false, error: error });
-    }
-  } catch (err) {
-    console.error("Error in isAuthenticated middleware:", err);
-    error.push("Internal Server Error");
-    return res.status(500).json({ success: false, error: error });
+  if (!req.user) {
+    error.push("Access Denied. You are not authorized to perform this operation.");
+    return res.status(401).json({ success: false, error: error });
   }
+  next();
 };
 
 const formatResolutionTime = (milliseconds) => {
