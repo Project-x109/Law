@@ -50,7 +50,8 @@ app.use((req, res, next) => {
   res.locals.csrfToken = req.csrfToken();
   next();
 });
-
+app.use(passport.initialize());
+app.use(passport.session());
 app.use("/api/v1", userRoutes);
 app.use("/api/v1", lawIssueRoutes);
 
@@ -61,9 +62,6 @@ app.get("/", (req, res) => {
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config({ path: "server/config/config.env" });
 }
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 app.get("/get-csrf-token", (req, res) => {
   res.json({ csrfToken: req.csrfToken() });

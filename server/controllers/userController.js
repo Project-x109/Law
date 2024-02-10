@@ -54,7 +54,7 @@ exports.RegisterEmployee = asyncErrorHandler(async (req, res) => {
         });
         await newUser.save();
         logger.info(`User registered with ID: ${newUser._id}`);
-        return res.status(201).json({ message: "Registration successful", user: req.user });
+        return res.status(201).json({ message: "Registration successful", user: newUser });
     } catch (err) {
         error.push("Internal Server Error")
         return res.status(500).json({ success: false, error: error });
