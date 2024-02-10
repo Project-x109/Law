@@ -9,9 +9,8 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const userRoutes = require("./routes/userRoutes");
 const lawIssueRoutes = require("./routes/lawIssueRoutes");
-
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: ["http://localhost:3000", "https://law-front-cj39.vercel.app"],
@@ -36,9 +35,9 @@ app.use(
 // Create CSRF middleware
 const csrfProtection = csrf({
   cookie: {
-    maxAge: 24 * 60 * 60 * 1000, // CSRF token expires after 24 hours
-    secure: true, // CSRF token is only sent over HTTPS
-    httpOnly: true, // CSRF token is not accessible to client-side scripts
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: true,
+    httpOnly: true,
   },
   name: "X-CSRF-TOKEN",
   value: (req) => req.csrfToken(),
@@ -47,32 +46,21 @@ const csrfProtection = csrf({
   },
 });
 app.use(csrfProtection);
-
-// Set CSRF token in cookie and locals
 app.use((req, res, next) => {
   res.cookie("X-CSRF-TOKEN", req.csrfToken());
   res.locals.csrfToken = req.csrfToken();
   next();
 });
-
+app.use(passport.initialize());
+app.use(passport.session());
 app.use("/api/v1", userRoutes);
 app.use("/api/v1", lawIssueRoutes);
-
 app.get("/", (req, res) => {
   res.send("Server is Running! 🚀");
 });
-
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config({ path: "server/config/config.env" });
-}
-
-app.use(passport.initialize());
-app.use(passport.session());
-
 app.get("/get-csrf-token", (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
-
 app.use(logMiddleware);
 app.use(errorHandler);
 
