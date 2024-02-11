@@ -13,7 +13,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
-    origin: ["http://localhost:3000","https://law-front-cj39-843wej5rp-project-x109.vercel.app","https://law-front-cj39-ax3iscfku-project-x109.vercel.app"],
+    origin: ["http://localhost:3000","https://law-front-cj39-843wej5rp-project-x109.vercel.app","https://law-front-cj39-99t0plss9-project-x109.vercel.app"],
     credentials: true,
   })
 );
